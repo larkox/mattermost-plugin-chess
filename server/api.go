@@ -20,27 +20,23 @@ func (p *Plugin) initializeAPI() {
 }
 
 func (p *Plugin) handleMove(w http.ResponseWriter, r *http.Request) {
-	p.API.LogDebug("Start")
 	vars := mux.Vars(r)
 	gameID := vars["id"]
 
 	userID := r.Header.Get("Mattermost-User-ID")
 	if userID == "" {
 		common.SlackAttachmentError(w, "Error: Not authorized")
-		p.API.LogDebug("No user")
 		return
 	}
 
 	request := model.PostActionIntegrationRequestFromJson(r.Body)
 	if request == nil {
 		common.SlackAttachmentError(w, "Error: invalid request")
-		p.API.LogDebug("No request")
 		return
 	}
 
 	if !p.gameManager.CanMove(gameID, userID) {
 		common.SlackAttachmentError(w, "Cannot move.")
-		p.API.LogDebug("Cannot move")
 		return
 	}
 
