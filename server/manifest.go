@@ -12,12 +12,12 @@ var manifest *model.Manifest
 
 const manifestStr = `
 {
-  "id": "com.mattermost.plugin-starter-template",
-  "name": "Plugin Starter Template",
-  "description": "This plugin serves as a starting point for writing a Mattermost plugin.",
-  "homepage_url": "https://github.com/mattermost/mattermost-plugin-starter-template",
-  "support_url": "https://github.com/mattermost/mattermost-plugin-starter-template/issues",
-  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-starter-template/releases/tag/v0.1.0",
+  "id": "com.mattermost.chess",
+  "name": "Chess Plugin",
+  "description": "Play Chess within Mattermost.",
+  "homepage_url": "https://github.com/larkox/mattermost-plugin-chess",
+  "support_url": "https://github.com/larkox/mattermost-plugin-chess/issues",
+  "release_notes_url": "https://github.com/larkox/mattermost-plugin-chess/releases/tag/v0.1.0",
   "icon_path": "assets/starter-template-icon.svg",
   "version": "0.1.0",
   "min_server_version": "5.12.0",

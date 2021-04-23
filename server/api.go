@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-api/experimental/common"
@@ -45,9 +46,10 @@ func (p *Plugin) handleMove(w http.ResponseWriter, r *http.Request) {
 		TriggerId: request.TriggerId,
 		URL:       fmt.Sprintf("%s/plugins/%s/movement/%s", *baseURL, manifest.Id, gameID),
 		Dialog: model.Dialog{
-			Title:            "Make your move",
-			IntroductionText: "Write your movement in default Algeabric Notation.",
-			SubmitLabel:      "Move",
+			Title: "Make your move",
+			IntroductionText: "Write your movement in default Algeabric Notation.![board]\n" +
+				"(" + fmt.Sprintf("%s/plugins/%s/images/%s?ts=%s", *baseURL, manifest.Id, request.ChannelId, time.Now().String()) + ")",
+			SubmitLabel: "Move",
 			Elements: []model.DialogElement{
 				{
 					DisplayName: "Movement",
