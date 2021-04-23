@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"image/color"
 	"math/big"
 	"net/http"
 	"time"
@@ -274,6 +275,13 @@ func (gm *GameManager) PrintImage(w http.ResponseWriter, id string) {
 		return
 	}
 
+	moves := g.Moves()
 	w.Header().Set("Content-Type", "image/svg+xml")
-	_ = chessImage.SVG(w, g.Position().Board())
+	if len(moves) == 0 {
+		_ = chessImage.SVG(w, g.Position().Board())
+		return
+	}
+
+	lastMove := moves[len(moves)-1]
+	_ = chessImage.SVG(w, g.Position().Board(), chessImage.MarkSquares(color.RGBA{R: 1, G: 200, B: 100, A: 0}, lastMove.S1(), lastMove.S2()))
 }

@@ -47,8 +47,8 @@ func (p *Plugin) handleMove(w http.ResponseWriter, r *http.Request) {
 		URL:       fmt.Sprintf("%s/plugins/%s/movement/%s", *baseURL, manifest.Id, gameID),
 		Dialog: model.Dialog{
 			Title: "Make your move",
-			IntroductionText: "Write your movement in default Algeabric Notation.![board]\n" +
-				"(" + fmt.Sprintf("%s/plugins/%s/images/%s?ts=%s", *baseURL, manifest.Id, request.ChannelId, time.Now().String()) + ")",
+			IntroductionText: "Write your movement in default Algeabric Notation.\n\n![board]" +
+				"(" + fmt.Sprintf("%s/plugins/%s/images/%s?ts=%s", *baseURL, manifest.Id, request.ChannelId, time.Now().Format("2006-01-02T15:04:05Z07:00")) + ")",
 			SubmitLabel: "Move",
 			Elements: []model.DialogElement{
 				{
