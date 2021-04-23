@@ -24,14 +24,16 @@ const (
 )
 
 type GameManager struct {
-	api   plugin.API
-	botID string
+	api              plugin.API
+	botID            string
+	grantAchievement func(name string, userID string)
 }
 
-func NewGameManager(api plugin.API, botID string) GameManager {
+func NewGameManager(api plugin.API, botID string, grantAchievement func(name string, userID string)) GameManager {
 	return GameManager{
-		api:   api,
-		botID: botID,
+		api:              api,
+		botID:            botID,
+		grantAchievement: grantAchievement,
 	}
 }
 
@@ -173,8 +175,10 @@ func (gm *GameManager) gameToPost(game *chess.Game) *model.Post {
 			},
 		}
 	case chess.BlackWon:
+		gm.grantAchievement(AchievementNameWinner, blackUser.Id)
 		attachment.Footer = fmt.Sprintf("Black won by %s!", translateMethod(game.Method()))
 	case chess.WhiteWon:
+		gm.grantAchievement(AchievementNameWinner, whiteUser.Id)
 		attachment.Footer = fmt.Sprintf("White won by %s!", translateMethod(game.Method()))
 	case chess.Draw:
 		attachment.Footer = fmt.Sprintf("Draw due to %s!", translateMethod(game.Method()))
