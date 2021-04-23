@@ -269,7 +269,7 @@ func (gm *GameManager) IsPlayingGame(id, player string) bool {
 	return whitePlayer.Id == player || blackPlayer.Id == player
 }
 
-func (gm *GameManager) PrintImage(w http.ResponseWriter, id string) {
+func (gm *GameManager) PrintImage(w http.ResponseWriter, id string, light, dark, highlight color.RGBA) {
 	g := gm.getGame(id)
 	if g == nil {
 		return
@@ -283,5 +283,10 @@ func (gm *GameManager) PrintImage(w http.ResponseWriter, id string) {
 	}
 
 	lastMove := moves[len(moves)-1]
-	_ = chessImage.SVG(w, g.Position().Board(), chessImage.MarkSquares(color.RGBA{R: 1, G: 200, B: 100, A: 0}, lastMove.S1(), lastMove.S2()))
+	_ = chessImage.SVG(
+		w,
+		g.Position().Board(),
+		chessImage.MarkSquares(highlight, lastMove.S1(), lastMove.S2()),
+		chessImage.SquareColors(light, dark),
+	)
 }
