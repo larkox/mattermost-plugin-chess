@@ -8,7 +8,7 @@ import (
 	"image/color"
 	"math/big"
 	"net/http"
-	"time"
+	"net/url"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -78,7 +78,7 @@ func (gm *GameManager) Move(id, player, movement string) error {
 	_, _, whiteUser, blackUser := gm.getGameMetadata(game)
 
 	turn := whiteUser
-	if len(game.Moves())%2 == 1 {
+	if game.Position().Turn() == chess.Black {
 		turn = blackUser
 	}
 
@@ -135,6 +135,55 @@ func (gm *GameManager) saveGame(game *chess.Game) {
 	_ = gm.api.KVSet(id, []byte(game.String()))
 }
 
+func (gm *GameManager) GetBoardLink(gameID string) string {
+	game := gm.getGame(gameID)
+	if game == nil {
+		return ""
+	}
+
+	return gm.getBoardLink(game)
+}
+
+func (gm *GameManager) getBoardLink(game *chess.Game) string {
+	baseURL := gm.api.GetConfig().ServiceSettings.SiteURL
+
+	fen := game.FEN()
+	movements := game.Moves()
+	from := ""
+	to := ""
+	check := ""
+	capture := ""
+	if len(movements) > 0 {
+		lastMovement := movements[len(movements)-1]
+		from = lastMovement.S1().String()
+		to = lastMovement.S2().String()
+		if lastMovement.HasTag(chess.Check) {
+			squareMap := game.Position().Board().SquareMap()
+			for square, piece := range squareMap {
+				if piece.Type() == chess.King && piece.Color() == squareMap[lastMovement.S2()].Color().Other() {
+					check = square.String()
+				}
+			}
+		}
+		if lastMovement.HasTag(chess.Capture) {
+			capture = lastMovement.S2().String()
+			if lastMovement.HasTag(chess.EnPassant) {
+				capture = lastMovement.S2().File().String() + lastMovement.S1().Rank().String()
+			}
+		}
+	}
+
+	imageURL, _ := url.Parse(fmt.Sprintf("%s/plugins/%s/images", *baseURL, manifest.Id))
+	q := imageURL.Query()
+	q.Set("fen", fen)
+	q.Set("from", from)
+	q.Set("to", to)
+	q.Set("check", check)
+	q.Set("capture", capture)
+	imageURL.RawQuery = q.Encode()
+	return imageURL.String()
+}
+
 func (gm *GameManager) gameToPost(game *chess.Game) *model.Post {
 	channelID, postID, whiteUser, blackUser := gm.getGameMetadata(game)
 
@@ -146,16 +195,35 @@ func (gm *GameManager) gameToPost(game *chess.Game) *model.Post {
 	}
 
 	turn := "White"
-	if len(game.Moves())%2 == 1 {
+	if game.Position().Turn() == chess.Black {
 		turn = "Black"
 	}
 
 	attachment := &model.SlackAttachment{
 		Title:    "Chess game",
-		ImageURL: fmt.Sprintf("%s/plugins/%s/images/%s?ts=%s", *baseURL, manifest.Id, channelID, time.Now().String()),
-		Text:     fmt.Sprintf("White: %s\nBlack: %s\nTurn: %s", whiteUser.Username, blackUser.Username, turn),
+		ImageURL: gm.getBoardLink(game),
+		Text:     fmt.Sprintf("White: %s\nBlack: %s", whiteUser.Username, blackUser.Username),
 	}
 
+	movements := game.Moves()
+	check := false
+	promoPiece := ""
+	if len(movements) > 0 {
+		lastMovement := movements[len(movements)-1]
+		check = lastMovement.HasTag(chess.Check)
+		if lastMovement.Promo() != chess.NoPieceType {
+			promoPiece = pieceToPieceName[lastMovement.Promo()]
+		}
+	}
+
+	if promoPiece != "" {
+		attachment.Text += "\nPawn promoted to " + promoPiece
+	}
+	if check {
+		attachment.Text += "\nCHECK!"
+	}
+
+	attachment.Text += "\nTurn: " + turn
 	switch game.Outcome() {
 	case chess.NoOutcome:
 		attachment.Actions = []*model.PostAction{
@@ -273,24 +341,55 @@ func (gm *GameManager) IsPlayingGame(id, player string) bool {
 	return whitePlayer.Id == player || blackPlayer.Id == player
 }
 
-func (gm *GameManager) PrintImage(w http.ResponseWriter, id string, light, dark, highlight color.RGBA) {
-	g := gm.getGame(id)
-	if g == nil {
+func (gm *GameManager) PrintImage(w http.ResponseWriter, fen, from, to, check, capture string) {
+	gf, err := chess.FEN(fen)
+	if err != nil {
 		return
 	}
+	g := chess.NewGame(gf)
 
-	moves := g.Moves()
 	w.Header().Set("Content-Type", "image/svg+xml")
-	if len(moves) == 0 {
+	if from == "" {
 		_ = chessImage.SVG(w, g.Position().Board())
 		return
 	}
 
-	lastMove := moves[len(moves)-1]
+	cian := color.RGBA{0, 255, 255, 1}
+	red := color.RGBA{255, 0, 0, 1}
+
+	redSquares := []chess.Square{}
+	if capture != "" {
+		redSquares = append(redSquares, strToSquareMap[capture])
+	}
+	if check != "" {
+		redSquares = append(redSquares, strToSquareMap[check])
+	}
+
 	_ = chessImage.SVG(
 		w,
 		g.Position().Board(),
-		chessImage.MarkSquares(highlight, lastMove.S1(), lastMove.S2()),
-		chessImage.SquareColors(light, dark),
+		chessImage.MarkSquares(cian, strToSquareMap[from], strToSquareMap[to]),
+		chessImage.MarkSquares(red, redSquares...),
 	)
 }
+
+var (
+	pieceToPieceName = map[chess.PieceType]string{
+		chess.King:   "King",
+		chess.Queen:  "Queen",
+		chess.Bishop: "Bishop",
+		chess.Knight: "Knight",
+		chess.Rook:   "Rook",
+		chess.Pawn:   "Pawn",
+	}
+	strToSquareMap = map[string]chess.Square{
+		"a1": chess.A1, "a2": chess.A2, "a3": chess.A3, "a4": chess.A4, "a5": chess.A5, "a6": chess.A6, "a7": chess.A7, "a8": chess.A8,
+		"b1": chess.B1, "b2": chess.B2, "b3": chess.B3, "b4": chess.B4, "b5": chess.B5, "b6": chess.B6, "b7": chess.B7, "b8": chess.B8,
+		"c1": chess.C1, "c2": chess.C2, "c3": chess.C3, "c4": chess.C4, "c5": chess.C5, "c6": chess.C6, "c7": chess.C7, "c8": chess.C8,
+		"d1": chess.D1, "d2": chess.D2, "d3": chess.D3, "d4": chess.D4, "d5": chess.D5, "d6": chess.D6, "d7": chess.D7, "d8": chess.D8,
+		"e1": chess.E1, "e2": chess.E2, "e3": chess.E3, "e4": chess.E4, "e5": chess.E5, "e6": chess.E6, "e7": chess.E7, "e8": chess.E8,
+		"f1": chess.F1, "f2": chess.F2, "f3": chess.F3, "f4": chess.F4, "f5": chess.F5, "f6": chess.F6, "f7": chess.F7, "f8": chess.F8,
+		"g1": chess.G1, "g2": chess.G2, "g3": chess.G3, "g4": chess.G4, "g5": chess.G5, "g6": chess.G6, "g7": chess.G7, "g8": chess.G8,
+		"h1": chess.H1, "h2": chess.H2, "h3": chess.H3, "h4": chess.H4, "h5": chess.H5, "h6": chess.H6, "h7": chess.H7, "h8": chess.H8,
+	}
+)

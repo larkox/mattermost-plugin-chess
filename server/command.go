@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -80,19 +81,25 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 }
 
 func (p *Plugin) runChallengeCommand(args []string, extra *model.CommandArgs) (bool, *model.CommandResponse, error) {
+	var receiver *model.User
 	if len(args) < 1 {
-		p.postCommandResponse(extra, "You must specify a user to challenge.\n"+getHelp())
-		return false, nil, nil
-	}
-
-	userName := args[0]
-	if args[0][0] == '@' {
-		userName = args[0][1:]
-	}
-	receiver, appErr := p.API.GetUserByUsername(userName)
-	if appErr != nil {
-		p.postCommandResponse(extra, "Please, provide a valid user.\n"+getHelp())
-		return false, nil, nil
+		var err error
+		receiver, err = p.getOtherUserFromChannel(extra)
+		if err != nil {
+			p.postCommandResponse(extra, "Error: "+err.Error())
+			return false, nil, nil
+		}
+	} else {
+		userName := args[0]
+		if args[0][0] == '@' {
+			userName = args[0][1:]
+		}
+		var appErr *model.AppError
+		receiver, appErr = p.API.GetUserByUsername(userName)
+		if appErr != nil {
+			p.postCommandResponse(extra, "Please, provide a valid user.\n"+getHelp())
+			return false, nil, nil
+		}
 	}
 
 	if receiver.Id == extra.UserId {
@@ -116,6 +123,26 @@ func (p *Plugin) runChallengeCommand(args []string, extra *model.CommandArgs) (b
 	return false, &model.CommandResponse{
 		GotoLocation: extra.SiteURL + "/" + t.Name + "/messages/@" + receiver.Username,
 	}, nil
+}
+
+func (p *Plugin) getOtherUserFromChannel(extra *model.CommandArgs) (*model.User, error) {
+	c, appErr := p.API.GetChannel(extra.ChannelId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	if c.Type != model.CHANNEL_DIRECT {
+		return nil, errors.New("you can only start a chess challenge on a direct message")
+	}
+
+	otherID := c.GetOtherUserIdForDM(extra.UserId)
+
+	user, appErr := p.API.GetUser(otherID)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	return user, nil
 }
 
 func getAutocompleteData() *model.AutocompleteData {
