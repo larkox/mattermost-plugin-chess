@@ -9,6 +9,8 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -173,7 +175,7 @@ func (gm *GameManager) getBoardLink(game *chess.Game) string {
 		}
 	}
 
-	imageURL, _ := url.Parse(fmt.Sprintf("%s/plugins/%s/images", *baseURL, manifest.Id))
+	imageURL, _ := url.Parse(fmt.Sprintf("%s/plugins/%s/image.svg", *baseURL, manifest.Id))
 	q := imageURL.Query()
 	q.Set("fen", fen)
 	q.Set("from", from)
@@ -349,28 +351,41 @@ func (gm *GameManager) PrintImage(w http.ResponseWriter, fen, from, to, check, c
 	g := chess.NewGame(gf)
 
 	w.Header().Set("Content-Type", "image/svg+xml")
+	buf := bytes.NewBuffer([]byte{})
 	if from == "" {
-		_ = chessImage.SVG(w, g.Position().Board())
-		return
+		_ = chessImage.SVG(buf, g.Position().Board())
+	} else {
+		cian := color.RGBA{0, 255, 255, 1}
+		red := color.RGBA{255, 0, 0, 1}
+
+		redSquares := []chess.Square{}
+		if capture != "" {
+			redSquares = append(redSquares, strToSquareMap[capture])
+		}
+		if check != "" {
+			redSquares = append(redSquares, strToSquareMap[check])
+		}
+
+		_ = chessImage.SVG(
+			buf,
+			g.Position().Board(),
+			chessImage.MarkSquares(cian, strToSquareMap[from], strToSquareMap[to]),
+			chessImage.MarkSquares(red, redSquares...),
+		)
 	}
 
-	cian := color.RGBA{0, 255, 255, 1}
-	red := color.RGBA{255, 0, 0, 1}
-
-	redSquares := []chess.Square{}
-	if capture != "" {
-		redSquares = append(redSquares, strToSquareMap[capture])
-	}
-	if check != "" {
-		redSquares = append(redSquares, strToSquareMap[check])
-	}
-
-	_ = chessImage.SVG(
-		w,
-		g.Position().Board(),
-		chessImage.MarkSquares(cian, strToSquareMap[from], strToSquareMap[to]),
-		chessImage.MarkSquares(red, redSquares...),
-	)
+	// Minor fixes for mobile strictness
+	svgstring := string(buf.Bytes())
+	// Add viewbox
+	svgstrings := strings.Split(svgstring, "\n")
+	r, _ := regexp.Compile("([a-z]+)=\"([0-9]+)\"")
+	match := r.FindAllStringSubmatch(svgstrings[2], -1)
+	svgstrings[2] += fmt.Sprintf(` viewBox="0 0 %s %s"`, match[0][2], match[1][2])
+	svgstring = strings.Join(svgstrings, "\n")
+	// Fix badly formed color fill
+	r, _ = regexp.Compile(":000000")
+	out := r.ReplaceAll([]byte(svgstring), []byte(":#000000"))
+	w.Write([]byte(out))
 }
 
 var (

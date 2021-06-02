@@ -16,7 +16,7 @@ func (p *Plugin) initializeAPI() {
 	p.router.HandleFunc("/movement/{id}", p.handleMovement).Methods(http.MethodPost)
 	p.router.HandleFunc("/resign/{id}", p.handleResign).Methods(http.MethodPost)
 	p.router.HandleFunc("/resignation/{id}", p.handleResignation).Methods(http.MethodPost)
-	p.router.HandleFunc("/images", p.handleImage).Methods(http.MethodGet)
+	p.router.HandleFunc("/image.svg", p.handleImage).Methods(http.MethodGet)
 }
 
 func (p *Plugin) handleMove(w http.ResponseWriter, r *http.Request) {
