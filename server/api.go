@@ -124,13 +124,12 @@ func (p *Plugin) handleMovement(w http.ResponseWriter, r *http.Request) {
 
 	movement := request.Submission["movement"].(string)
 
-	err := p.gameManager.Move(gameID, userID, movement)
+	post, err := p.gameManager.Move(gameID, userID, movement)
 	if err != nil {
 		interactiveDialogError(w, "Error: "+err.Error())
 		return
 	}
 
-	post := p.gameManager.GetGamePost(gameID)
 	_, _ = p.API.UpdatePost(post)
 
 	_, _ = w.Write((&model.SubmitDialogResponse{}).ToJson())
@@ -146,13 +145,12 @@ func (p *Plugin) handleResignation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := p.gameManager.Resign(gameID, userID)
+	post, err := p.gameManager.Resign(gameID, userID)
 	if err != nil {
 		interactiveDialogError(w, "Error: "+err.Error())
 		return
 	}
 
-	post := p.gameManager.GetGamePost(gameID)
 	_, _ = p.API.UpdatePost(post)
 
 	_, _ = w.Write((&model.SubmitDialogResponse{}).ToJson())
