@@ -19,7 +19,7 @@ const manifestStr = `
   "support_url": "https://github.com/larkox/mattermost-plugin-chess/issues",
   "release_notes_url": "https://github.com/larkox/mattermost-plugin-chess/releases/tag/v0.1.0",
   "icon_path": "assets/starter-template-icon.svg",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "min_server_version": "5.12.0",
   "server": {
     "executables": {

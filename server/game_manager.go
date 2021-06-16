@@ -71,10 +71,10 @@ func (gm *GameManager) CreateGame(playerA, playerB string) error {
 	return nil
 }
 
-func (gm *GameManager) Move(id, player, movement string) error {
+func (gm *GameManager) Move(id, player, movement string) (*model.Post, error) {
 	game := gm.getGame(id)
 	if game == nil {
-		return errors.New("no game started")
+		return nil, errors.New("no game started")
 	}
 
 	_, _, whiteUser, blackUser := gm.getGameMetadata(game)
@@ -85,22 +85,22 @@ func (gm *GameManager) Move(id, player, movement string) error {
 	}
 
 	if player != turn.Id {
-		return errors.New("it is not your turn")
+		return nil, errors.New("it is not your turn")
 	}
 
 	err := game.MoveStr(movement)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	gm.saveGame(game)
-	return nil
+	return gm.gameToPost(game), nil
 }
 
-func (gm *GameManager) Resign(id, player string) error {
+func (gm *GameManager) Resign(id, player string) (*model.Post, error) {
 	game := gm.getGame(id)
 	if game == nil {
-		return errors.New("no game started")
+		return nil, errors.New("no game started")
 	}
 
 	_, _, whiteUser, blackUser := gm.getGameMetadata(game)
@@ -111,11 +111,11 @@ func (gm *GameManager) Resign(id, player string) error {
 	case blackUser.Id:
 		game.Resign(chess.Black)
 	default:
-		return errors.New("you are not playing")
+		return nil, errors.New("you are not playing")
 	}
 
 	gm.saveGame(game)
-	return nil
+	return gm.gameToPost(game), nil
 }
 
 func (gm *GameManager) getGame(id string) *chess.Game {
@@ -305,15 +305,6 @@ func (gm *GameManager) getGameMetadata(game *chess.Game) (string, string, *model
 	}
 
 	return id, postID, whiteUser, blackUser
-}
-
-func (gm *GameManager) GetGamePost(id string) *model.Post {
-	g := gm.getGame(id)
-	if g == nil {
-		return nil
-	}
-
-	return gm.gameToPost(g)
 }
 
 func (gm *GameManager) CanMove(id, player string) bool {
