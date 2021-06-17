@@ -576,8 +576,8 @@ github.com/labstack/echo/v4 v4.1.11/go.mod h1:i541M3Fj6f76NZtHSj7TXnyM8n2gaodfvf
 github.com/labstack/gommon v0.3.0/go.mod h1:MULnywXg0yavhxWKc+lOruYdAhDwPK9wf0OL7NoOu+k=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0/go.mod h1:dXGbAdH5GtBTC4WfIxhKZfyBF/HBFgRZSWwZ9g/He9o=
 github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0/go.mod h1:vmVJ0l/dxyfGW6FmdpVm2joNMFikkuWg0EoCKLGUMNw=
-github.com/larkox/mattermost-plugin-badges v0.0.0-20210423154349-c5efb01fdc85 h1:O4Uys9W+yikOss5OFrExFPHxySDdVASI55IxbAs5shU=
-github.com/larkox/mattermost-plugin-badges v0.0.0-20210423154349-c5efb01fdc85/go.mod h1:aaQq53kVLGtA/DCm6ZXzHnktYMIzldhQmpSmY5vup3g=
+github.com/larkox/mattermost-plugin-badges v0.1.1 h1:UJX61eCpvwUs7ZmutPhd4gbnANDS9VBrOjHr/fMB84w=
+github.com/larkox/mattermost-plugin-badges v0.1.1/go.mod h1:aaQq53kVLGtA/DCm6ZXzHnktYMIzldhQmpSmY5vup3g=
 github.com/ledongthuc/pdf v0.0.0-20200323191019-23c5852adbd2/go.mod h1:imJHygn/1yfhB7XSJJKlFZKl/J+dCPAknuiaGOshXAs=
 github.com/levigross/exp-html v0.0.0-20120902181939-8df60c69a8f5/go.mod h1:QMe2wuKJ0o7zIVE8AqiT8rd8epmm6WDIZ2wyuBqYPzM=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=

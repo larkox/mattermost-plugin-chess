@@ -9,7 +9,7 @@ import (
 )
 
 func (p *Plugin) EnsureBadges() {
-	badges := []badgesmodel.Badge{
+	badges := []*badgesmodel.Badge{
 		{
 			Name:        AchievementNameWinner,
 			Description: "Win a game of chess",
