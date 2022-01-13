@@ -2,6 +2,7 @@ import React from 'react';
 import {Store, Action} from 'redux';
 
 import {GlobalState} from 'mattermost-redux/types/store';
+import {getConfig} from 'mattermost-redux/selectors/entities/general';
 
 import manifest from './manifest';
 
@@ -22,6 +23,18 @@ export default class Plugin {
             'Chess',
             'Start a chess game.',
         );
+
+        if (registry.registerAppBarComponent) {
+            const siteUrl = getConfig(store.getState())?.SiteURL || '';
+            const iconURL = `${siteUrl}/plugins/${manifest.id}/public/app-bar-icon.png`;
+            registry.registerAppBarComponent(
+                iconURL,
+                () => {
+                    store.dispatch(challenge() as any);
+                },
+                'Start a chess game.',
+            );
+        }
     }
 }
 
